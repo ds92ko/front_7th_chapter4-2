@@ -29,7 +29,7 @@ import {
   Wrap,
 } from '@chakra-ui/react';
 import axios from 'axios';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DAY_LABELS } from './constants.ts';
 import { useScheduleContext } from './ScheduleContext.tsx';
 import { Lecture } from './types.ts';
@@ -84,6 +84,26 @@ const PAGE_SIZE = 100;
 
 const fetchMajors = () => axios.get<Lecture[]>('/schedules-majors.json');
 const fetchLiberalArts = () => axios.get<Lecture[]>('/schedules-liberal-arts.json');
+
+const Item = memo(({ onClick, ...lecture }: { onClick: (lecture: Lecture) => void } & Lecture) => {
+  const handleClick = () => onClick(lecture);
+
+  return (
+    <Tr>
+      <Td width="100px">{lecture.id}</Td>
+      <Td width="50px">{lecture.grade}</Td>
+      <Td width="200px">{lecture.title}</Td>
+      <Td width="50px">{lecture.credits}</Td>
+      <Td width="150px" dangerouslySetInnerHTML={{ __html: lecture.major }} />
+      <Td width="150px" dangerouslySetInnerHTML={{ __html: lecture.schedule }} />
+      <Td width="80px">
+        <Button size="sm" colorScheme="green" onClick={handleClick}>
+          추가
+        </Button>
+      </Td>
+    </Tr>
+  );
+});
 
 // TODO: 이 코드를 개선해서 API 호출을 최소화 해보세요 + Promise.all이 현재 잘못 사용되고 있습니다. 같이 개선해주세요.
 const fetchAllLectures = async () =>
@@ -148,23 +168,26 @@ const SearchDialog = ({ searchInfo, onClose }: Props) => {
     loaderWrapperRef.current?.scrollTo(0, 0);
   };
 
-  const addSchedule = (lecture: Lecture) => {
-    if (!searchInfo) return;
+  const addSchedule = useCallback(
+    (lecture: Lecture) => {
+      if (!searchInfo) return;
 
-    const { tableId } = searchInfo;
+      const { tableId } = searchInfo;
 
-    const schedules = parseSchedule(lecture.schedule).map(schedule => ({
-      ...schedule,
-      lecture,
-    }));
+      const schedules = parseSchedule(lecture.schedule).map(schedule => ({
+        ...schedule,
+        lecture,
+      }));
 
-    setSchedulesMap(prev => ({
-      ...prev,
-      [tableId]: [...prev[tableId], ...schedules],
-    }));
+      setSchedulesMap(prev => ({
+        ...prev,
+        [tableId]: [...prev[tableId], ...schedules],
+      }));
 
-    onClose();
-  };
+      onClose();
+    },
+    [searchInfo, setSchedulesMap, onClose],
+  );
 
   useEffect(() => {
     const start = performance.now();
@@ -381,23 +404,7 @@ const SearchDialog = ({ searchInfo, onClose }: Props) => {
                 <Table size="sm" variant="striped">
                   <Tbody>
                     {visibleLectures.map((lecture, index) => (
-                      <Tr key={`${lecture.id}-${index}`}>
-                        <Td width="100px">{lecture.id}</Td>
-                        <Td width="50px">{lecture.grade}</Td>
-                        <Td width="200px">{lecture.title}</Td>
-                        <Td width="50px">{lecture.credits}</Td>
-                        <Td width="150px" dangerouslySetInnerHTML={{ __html: lecture.major }} />
-                        <Td width="150px" dangerouslySetInnerHTML={{ __html: lecture.schedule }} />
-                        <Td width="80px">
-                          <Button
-                            size="sm"
-                            colorScheme="green"
-                            onClick={() => addSchedule(lecture)}
-                          >
-                            추가
-                          </Button>
-                        </Td>
-                      </Tr>
+                      <Item key={`${lecture.id}-${index}`} onClick={addSchedule} {...lecture} />
                     ))}
                   </Tbody>
                 </Table>
