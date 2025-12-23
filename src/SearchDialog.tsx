@@ -82,8 +82,8 @@ const TIME_SLOTS = [
 
 const PAGE_SIZE = 100;
 
-const fetchMajors = () => axios.get<Lecture[]>('/schedules-majors.json');
-const fetchLiberalArts = () => axios.get<Lecture[]>('/schedules-liberal-arts.json');
+const fetchMajors = () => axios.get<Lecture[]>('./schedules-majors.json');
+const fetchLiberalArts = () => axios.get<Lecture[]>('./schedules-liberal-arts.json');
 
 const Item = memo(({ onClick, ...lecture }: { onClick: (lecture: Lecture) => void } & Lecture) => {
   const handleClick = () => onClick(lecture);
