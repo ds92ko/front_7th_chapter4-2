@@ -2,7 +2,6 @@
   "ci": {
     "collect": {
       "numberOfRuns": 1,
-      "startServerCommand": "npx http-server dist -p 8080",
       "url": ["http://localhost:8080"]
     },
     "assert": {

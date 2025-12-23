@@ -42,8 +42,15 @@ jobs:
 
       - name: Start local server
         run: |
-          npx http-server dist -p 8080 &
-          sleep 3
+          npx http-server dist -p 8080 -c-1 &
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080 > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            sleep 1
+          done
           curl -f http://localhost:8080 || exit 1
 
       - name: Run Lighthouse CI
