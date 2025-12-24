@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Checkbox,
   CheckboxGroup,
   FormControl,
@@ -20,7 +19,6 @@ import {
   TagCloseButton,
   TagLabel,
   Tbody,
-  Td,
   Text,
   Th,
   Thead,
@@ -28,12 +26,14 @@ import {
   VStack,
   Wrap,
 } from '@chakra-ui/react';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { cachedFetch } from './apiCache.ts';
-import { DAY_LABELS } from './constants.ts';
-import { useScheduleContext } from './ScheduleContext.tsx';
-import { Lecture } from './types.ts';
-import { parseSchedule } from './utils.ts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DAY_LABELS } from '../../constants/common.ts';
+import { PAGE_SIZE, TIME_SLOTS } from '../../constants/search.ts';
+import { useScheduleContext } from '../../contexts/ScheduleContext.ts';
+import { cachedFetch } from '../../lib/cachedFetch.ts';
+import { Lecture } from '../../types/search.ts';
+import { parseSchedule } from '../../utils/schedule.ts';
+import SearchItem from './SearchItem.tsx';
 
 interface Props {
   searchInfo: {
@@ -53,60 +53,19 @@ interface SearchOption {
   credits?: number;
 }
 
-const TIME_SLOTS = [
-  { id: 1, label: '09:00~09:30' },
-  { id: 2, label: '09:30~10:00' },
-  { id: 3, label: '10:00~10:30' },
-  { id: 4, label: '10:30~11:00' },
-  { id: 5, label: '11:00~11:30' },
-  { id: 6, label: '11:30~12:00' },
-  { id: 7, label: '12:00~12:30' },
-  { id: 8, label: '12:30~13:00' },
-  { id: 9, label: '13:00~13:30' },
-  { id: 10, label: '13:30~14:00' },
-  { id: 11, label: '14:00~14:30' },
-  { id: 12, label: '14:30~15:00' },
-  { id: 13, label: '15:00~15:30' },
-  { id: 14, label: '15:30~16:00' },
-  { id: 15, label: '16:00~16:30' },
-  { id: 16, label: '16:30~17:00' },
-  { id: 17, label: '17:00~17:30' },
-  { id: 18, label: '17:30~18:00' },
-  { id: 19, label: '18:00~18:50' },
-  { id: 20, label: '18:55~19:45' },
-  { id: 21, label: '19:50~20:40' },
-  { id: 22, label: '20:45~21:35' },
-  { id: 23, label: '21:40~22:30' },
-  { id: 24, label: '22:35~23:25' },
-];
-
-const PAGE_SIZE = 100;
-
 const fetchMajors = () => cachedFetch<Lecture[]>('./schedules-majors.json');
 const fetchLiberalArts = () => cachedFetch<Lecture[]>('./schedules-liberal-arts.json');
 
-const Item = memo(({ onClick, ...lecture }: { onClick: (lecture: Lecture) => void } & Lecture) => {
-  const handleClick = () => onClick(lecture);
-
-  return (
-    <Tr>
-      <Td width="100px">{lecture.id}</Td>
-      <Td width="50px">{lecture.grade}</Td>
-      <Td width="200px">{lecture.title}</Td>
-      <Td width="50px">{lecture.credits}</Td>
-      <Td width="150px" dangerouslySetInnerHTML={{ __html: lecture.major }} />
-      <Td width="150px" dangerouslySetInnerHTML={{ __html: lecture.schedule }} />
-      <Td width="80px">
-        <Button size="sm" colorScheme="green" onClick={handleClick}>
-          추가
-        </Button>
-      </Td>
-    </Tr>
-  );
-});
-
 // TODO: 이 코드를 개선해서 API 호출을 최소화 해보세요 + Promise.all이 현재 잘못 사용되고 있습니다. 같이 개선해주세요.
-const fetchAllLectures = () => Promise.all([fetchMajors(), fetchLiberalArts()]);
+const fetchAllLectures = () =>
+  Promise.all([
+    fetchMajors(),
+    fetchLiberalArts(),
+    fetchMajors(),
+    fetchLiberalArts(),
+    fetchMajors(),
+    fetchLiberalArts(),
+  ]);
 
 // TODO: 이 컴포넌트에서 불필요한 연산이 발생하지 않도록 다양한 방식으로 시도해주세요.
 const SearchDialog = ({ searchInfo, onClose }: Props) => {
@@ -398,7 +357,11 @@ const SearchDialog = ({ searchInfo, onClose }: Props) => {
                 <Table size="sm" variant="striped">
                   <Tbody>
                     {visibleLectures.map((lecture, index) => (
-                      <Item key={`${lecture.id}-${index}`} onClick={addSchedule} {...lecture} />
+                      <SearchItem
+                        key={`${lecture.id}-${index}`}
+                        onClick={addSchedule}
+                        {...lecture}
+                      />
                     ))}
                   </Tbody>
                 </Table>

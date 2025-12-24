@@ -15,9 +15,10 @@ import {
 import { useDndContext, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { ComponentProps, Fragment } from 'react';
-import { CellSize, DAY_LABELS, 분 } from './constants.ts';
-import { Schedule } from './types.ts';
-import { fill2, parseHnM } from './utils.ts';
+import { DAY_LABELS } from '../../constants/common.ts';
+import { CellSize, 분 } from '../../constants/schedule.ts';
+import { Schedule } from '../../types/schedule.ts';
+import { fill2, parseHnM } from '../../utils/format.ts';
 
 interface Props {
   tableId: string;
