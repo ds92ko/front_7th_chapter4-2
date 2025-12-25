@@ -15,6 +15,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ComponentProps, memo, useMemo } from 'react';
 import { DAY_LABELS } from '../../constants/common';
 import { CellSize } from '../../constants/schedule';
+import useAutoCallback from '../../hooks/useAutoCallback';
 import { Schedule } from '../../types/schedule';
 import ScheduleText from './ScheduleText';
 
@@ -46,11 +47,12 @@ const ScheduleItem = memo(({ id, data, bg, onDeleteButtonClick }: ScheduleItemPr
     [leftIndex, topIndex, size],
   );
 
-  const handleDelete = () =>
+  const handleDelete = useAutoCallback(() =>
     onDeleteButtonClick?.({
       day,
       time: range[0],
-    });
+    }),
+  );
 
   const content = (
     <Box
