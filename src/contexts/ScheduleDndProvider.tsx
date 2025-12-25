@@ -2,7 +2,7 @@ import { DndContext, Modifier, PointerSensor, useSensor, useSensors } from '@dnd
 import { PropsWithChildren } from 'react';
 import { DAY_LABELS } from '../constants/common.ts';
 import { CellSize } from '../constants/schedule.ts';
-import { useScheduleContext } from './ScheduleContext.ts';
+import { useScheduleAction, useScheduleContext } from './ScheduleContext.ts';
 
 function createSnapModifier(): Modifier {
   return ({ transform, containerNodeRect, draggingNodeRect }) => {
@@ -32,7 +32,8 @@ function createSnapModifier(): Modifier {
 const modifiers = [createSnapModifier()];
 
 export default function ScheduleDndProvider({ children }: PropsWithChildren) {
-  const { schedulesMap, setSchedulesMap } = useScheduleContext();
+  const { schedulesMap } = useScheduleContext();
+  const { setSchedulesMap } = useScheduleAction();
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {

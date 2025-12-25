@@ -1,12 +1,13 @@
 import { Button, ButtonGroup, Flex, Heading, Stack } from '@chakra-ui/react';
 import { useCallback, useState } from 'react';
-import { useScheduleContext } from '../../contexts/ScheduleContext.ts';
+import { useScheduleAction, useScheduleContext } from '../../contexts/ScheduleContext.ts';
 import ScheduleDndProvider from '../../contexts/ScheduleDndProvider.tsx';
 import SearchDialog from '../search/SearchDialog.tsx';
 import ScheduleTable from './ScheduleTable.tsx';
 
 export const ScheduleTables = () => {
-  const { schedulesMap, setSchedulesMap } = useScheduleContext();
+  const { schedulesMap } = useScheduleContext();
+  const { setSchedulesMap } = useScheduleAction();
   const [searchInfo, setSearchInfo] = useState<{
     tableId: string;
     day?: string;
@@ -15,19 +16,27 @@ export const ScheduleTables = () => {
 
   const disabledRemoveButton = Object.keys(schedulesMap).length === 1;
 
-  const duplicate = (targetId: string) => {
-    setSchedulesMap(prev => ({
-      ...prev,
-      [`schedule-${Date.now()}`]: [...prev[targetId]],
-    }));
-  };
+  const add = useCallback((tableId: string) => setSearchInfo({ tableId }), [setSearchInfo]);
 
-  const remove = (targetId: string) => {
-    setSchedulesMap(prev => {
-      delete prev[targetId];
-      return { ...prev };
-    });
-  };
+  const duplicate = useCallback(
+    (targetId: string) => {
+      setSchedulesMap(prev => ({
+        ...prev,
+        [`schedule-${Date.now()}`]: [...prev[targetId]],
+      }));
+    },
+    [setSchedulesMap],
+  );
+
+  const remove = useCallback(
+    (targetId: string) => {
+      setSchedulesMap(prev => {
+        delete prev[targetId];
+        return { ...prev };
+      });
+    },
+    [setSchedulesMap],
+  );
 
   const closeSearchDialog = useCallback(() => setSearchInfo(null), []);
 
@@ -41,7 +50,7 @@ export const ScheduleTables = () => {
                 시간표 {index + 1}
               </Heading>
               <ButtonGroup size="sm" isAttached>
-                <Button colorScheme="green" onClick={() => setSearchInfo({ tableId })}>
+                <Button colorScheme="green" onClick={() => add(tableId)}>
                   시간표 추가
                 </Button>
                 <Button colorScheme="green" mx="1px" onClick={() => duplicate(tableId)}>

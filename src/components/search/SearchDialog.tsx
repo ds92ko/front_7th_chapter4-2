@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PAGE_SIZE } from '../../constants/search.ts';
-import { useScheduleContext } from '../../contexts/ScheduleContext.ts';
+import { useScheduleAction } from '../../contexts/ScheduleContext.ts';
 import { cachedFetch } from '../../lib/cachedFetch.ts';
 import { Lecture, SearchOption } from '../../types/search.ts';
 import { parseSchedule } from '../../utils/schedule.ts';
@@ -56,7 +56,7 @@ const fetchAllLectures = () =>
 
 // TODO: 이 컴포넌트에서 불필요한 연산이 발생하지 않도록 다양한 방식으로 시도해주세요.
 const SearchDialog = ({ searchInfo, onClose }: Props) => {
-  const { setSchedulesMap } = useScheduleContext();
+  const { setSchedulesMap } = useScheduleAction();
 
   const loaderWrapperRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
