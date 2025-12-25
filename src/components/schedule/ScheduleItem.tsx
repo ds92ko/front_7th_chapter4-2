@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { ComponentProps } from 'react';
+import { ComponentProps, memo } from 'react';
 import { DAY_LABELS } from '../../constants/common';
 import { CellSize } from '../../constants/schedule';
 import { Schedule } from '../../types/schedule';
@@ -22,7 +22,7 @@ interface ScheduleItemProps extends Omit<ComponentProps<typeof Box>, 'children'>
   onDeleteButtonClick?: (timeInfo: { day: string; time: number }) => void;
 }
 
-const ScheduleItem = ({ id, data, bg, onDeleteButtonClick }: ScheduleItemProps) => {
+const ScheduleItem = memo(({ id, data, bg, onDeleteButtonClick }: ScheduleItemProps) => {
   const { day, range, room, lecture } = data;
   const { attributes, setNodeRef, listeners, transform } = useDraggable({ id });
   const leftIndex = DAY_LABELS.indexOf(day as (typeof DAY_LABELS)[number]);
@@ -71,6 +71,6 @@ const ScheduleItem = ({ id, data, bg, onDeleteButtonClick }: ScheduleItemProps) 
       </PopoverContent>
     </Popover>
   );
-};
+});
 
 export default ScheduleItem;
