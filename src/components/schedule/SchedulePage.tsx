@@ -1,6 +1,7 @@
 import { Flex } from '@chakra-ui/react';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useScheduleAction, useScheduleContext } from '../../contexts/ScheduleContext.ts';
+import useAutoCallback from '../../hooks/useAutoCallback.ts';
 import SearchDialog from '../search/SearchDialog.tsx';
 import ScheduleBoard from './ScheduleBoard.tsx';
 
@@ -15,45 +16,32 @@ const SchedulePage = () => {
 
   const isRemoveDisabled = useMemo(() => Object.keys(schedulesMap).length === 1, [schedulesMap]);
 
-  const handleOpenSearchDialog = useCallback(
-    (tableId: string) => setSearchInfo({ tableId }),
-    [setSearchInfo],
+  const handleOpenSearchDialog = useAutoCallback((tableId: string) => setSearchInfo({ tableId }));
+  const handleCloseSearchDialog = useAutoCallback(() => setSearchInfo(null));
+  const handleDuplicateBoard = useAutoCallback((targetId: string) =>
+    setSchedulesMap(prev => ({
+      ...prev,
+      [`schedule-${Date.now()}`]: [...prev[targetId]],
+    })),
   );
-  const handleDuplicateBoard = useCallback(
-    (targetId: string) => {
-      setSchedulesMap(prev => ({
-        ...prev,
-        [`schedule-${Date.now()}`]: [...prev[targetId]],
-      }));
-    },
-    [setSchedulesMap],
+  const handleRemoveBoard = useAutoCallback((targetId: string) =>
+    setSchedulesMap(prev => {
+      delete prev[targetId];
+      return { ...prev };
+    }),
   );
-  const handleRemoveBoard = useCallback(
-    (targetId: string) => {
-      setSchedulesMap(prev => {
-        delete prev[targetId];
-        return { ...prev };
-      });
-    },
-    [setSchedulesMap],
+  const handleEmptyTimeCellClick = useAutoCallback(
+    (tableId: string, timeInfo: { day: string; time: number }) =>
+      setSearchInfo({ tableId, ...timeInfo }),
   );
-  const handleCloseSearchDialog = useCallback(() => setSearchInfo(null), []);
-  const handleEmptyTimeCellClick = useCallback(
-    (tableId: string, timeInfo: { day: string; time: number }) => {
-      setSearchInfo({ tableId, ...timeInfo });
-    },
-    [],
-  );
-  const handleScheduleDelete = useCallback(
-    (tableId: string, { day, time }: { day: string; time: number }) => {
+  const handleScheduleDelete = useAutoCallback(
+    (tableId: string, { day, time }: { day: string; time: number }) =>
       setSchedulesMap(prev => ({
         ...prev,
         [tableId]: prev[tableId].filter(
           schedule => schedule.day !== day || !schedule.range.includes(time),
         ),
-      }));
-    },
-    [setSchedulesMap],
+      })),
   );
 
   return (

@@ -1,6 +1,7 @@
 import { Button, ButtonGroup, Flex, Heading, Stack } from '@chakra-ui/react';
-import { memo, useCallback } from 'react';
+import { memo } from 'react';
 import ScheduleDndProvider from '../../contexts/ScheduleDndProvider';
+import useAutoCallback from '../../hooks/useAutoCallback';
 import { Schedule } from '../../types/schedule';
 import ScheduleTable from './ScheduleTable';
 
@@ -28,18 +29,12 @@ const ScheduleBoard = memo(
     onEmptyTimeCellClick,
     onScheduleDelete,
   }: ScheduleBoardProps) => {
-    const handleScheduleTimeClick = useCallback(
-      (timeInfo: { day: string; time: number }) => {
-        onEmptyTimeCellClick(tableId, timeInfo);
-      },
-      [tableId, onEmptyTimeCellClick],
-    );
-    const handleDeleteButtonClick = useCallback(
-      (timeInfo: { day: string; time: number }) => {
-        onScheduleDelete(tableId, timeInfo);
-      },
-      [tableId, onScheduleDelete],
-    );
+    const handleScheduleTimeClick = useAutoCallback((timeInfo: { day: string; time: number }) => {
+      onEmptyTimeCellClick(tableId, timeInfo);
+    });
+    const handleDeleteButtonClick = useAutoCallback((timeInfo: { day: string; time: number }) => {
+      onScheduleDelete(tableId, timeInfo);
+    });
 
     return (
       <Stack width="600px">

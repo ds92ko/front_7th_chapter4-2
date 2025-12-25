@@ -15,9 +15,10 @@ import {
   Tr,
   VStack,
 } from '@chakra-ui/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PAGE_SIZE } from '../../constants/search.ts';
 import { useScheduleAction } from '../../contexts/ScheduleContext.ts';
+import useAutoCallback from '../../hooks/useAutoCallback.ts';
 import { cachedFetch } from '../../lib/cachedFetch.ts';
 import { Lecture, SearchOption } from '../../types/search.ts';
 import { parseSchedule } from '../../utils/schedule.ts';
@@ -100,35 +101,31 @@ const SearchDialog = ({ searchInfo, onClose }: Props) => {
   const visibleLectures = filteredLectures.slice(0, page * PAGE_SIZE);
   const allMajors = useMemo(() => [...new Set(lectures.map(lecture => lecture.major))], [lectures]);
 
-  const changeSearchOption = useCallback(
+  const changeSearchOption = useAutoCallback(
     (field: keyof SearchOption, value: SearchOption[typeof field]) => {
       setPage(1);
       setSearchOptions(prev => ({ ...prev, [field]: value }));
       loaderWrapperRef.current?.scrollTo(0, 0);
     },
-    [],
   );
 
-  const addSchedule = useCallback(
-    (lecture: Lecture) => {
-      if (!searchInfo) return;
+  const addSchedule = useAutoCallback((lecture: Lecture) => {
+    if (!searchInfo) return;
 
-      const { tableId } = searchInfo;
+    const { tableId } = searchInfo;
 
-      const schedules = parseSchedule(lecture.schedule).map(schedule => ({
-        ...schedule,
-        lecture,
-      }));
+    const schedules = parseSchedule(lecture.schedule).map(schedule => ({
+      ...schedule,
+      lecture,
+    }));
 
-      setSchedulesMap(prev => ({
-        ...prev,
-        [tableId]: [...prev[tableId], ...schedules],
-      }));
+    setSchedulesMap(prev => ({
+      ...prev,
+      [tableId]: [...prev[tableId], ...schedules],
+    }));
 
-      onClose();
-    },
-    [searchInfo, setSchedulesMap, onClose],
-  );
+    onClose();
+  });
 
   useEffect(() => {
     if (!searchInfo) return;
