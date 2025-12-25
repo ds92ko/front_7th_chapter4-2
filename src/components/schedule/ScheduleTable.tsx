@@ -29,15 +29,10 @@ const ScheduleTable = memo(
 
     const dndContext = useDndContext();
 
-    const getActiveTableId = () => {
+    const activeTableId = useMemo(() => {
       const activeId = dndContext.active?.id;
-      if (activeId) {
-        return String(activeId).split(':')[0];
-      }
-      return null;
-    };
-
-    const activeTableId = getActiveTableId();
+      return activeId ? String(activeId).split(':')[0] : null;
+    }, [dndContext.active?.id]);
 
     return (
       <Box

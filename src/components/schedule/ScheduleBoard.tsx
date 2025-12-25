@@ -34,7 +34,6 @@ const ScheduleBoard = memo(
       },
       [tableId, onEmptyTimeCellClick],
     );
-
     const handleDeleteButtonClick = useCallback(
       (timeInfo: { day: string; time: number }) => {
         onScheduleDelete(tableId, timeInfo);
@@ -66,7 +65,6 @@ const ScheduleBoard = memo(
         </Flex>
         <ScheduleDndProvider>
           <ScheduleTable
-            key={`schedule-table-${index}`}
             schedules={schedules}
             tableId={tableId}
             onScheduleTimeClick={handleScheduleTimeClick}

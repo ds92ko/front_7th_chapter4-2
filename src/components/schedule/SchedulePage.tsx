@@ -1,5 +1,5 @@
 import { Flex } from '@chakra-ui/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useScheduleAction, useScheduleContext } from '../../contexts/ScheduleContext.ts';
 import SearchDialog from '../search/SearchDialog.tsx';
 import ScheduleBoard from './ScheduleBoard.tsx';
@@ -13,13 +13,12 @@ const SchedulePage = () => {
     time?: number;
   } | null>(null);
 
-  const isRemoveDisabled = Object.keys(schedulesMap).length === 1;
+  const isRemoveDisabled = useMemo(() => Object.keys(schedulesMap).length === 1, [schedulesMap]);
 
   const handleOpenSearchDialog = useCallback(
     (tableId: string) => setSearchInfo({ tableId }),
     [setSearchInfo],
   );
-
   const handleDuplicateBoard = useCallback(
     (targetId: string) => {
       setSchedulesMap(prev => ({
@@ -29,7 +28,6 @@ const SchedulePage = () => {
     },
     [setSchedulesMap],
   );
-
   const handleRemoveBoard = useCallback(
     (targetId: string) => {
       setSchedulesMap(prev => {
@@ -39,16 +37,13 @@ const SchedulePage = () => {
     },
     [setSchedulesMap],
   );
-
   const handleCloseSearchDialog = useCallback(() => setSearchInfo(null), []);
-
   const handleEmptyTimeCellClick = useCallback(
     (tableId: string, timeInfo: { day: string; time: number }) => {
       setSearchInfo({ tableId, ...timeInfo });
     },
     [],
   );
-
   const handleScheduleDelete = useCallback(
     (tableId: string, { day, time }: { day: string; time: number }) => {
       setSchedulesMap(prev => ({
