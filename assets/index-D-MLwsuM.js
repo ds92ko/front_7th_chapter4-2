@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/SearchDialog-D4mGVYUG.js","assets/react-BDq5ydJY.js","assets/chakra-ui-YFQdXzg5.js","assets/rolldown-runtime-CINmCwk_.js","assets/vendor--8zDkgLI.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/SearchDialog-DSNhtan6.js","assets/react-BDq5ydJY.js","assets/chakra-ui-YFQdXzg5.js","assets/rolldown-runtime-CINmCwk_.js","assets/vendor--8zDkgLI.js"])))=>i.map(i=>d[i]);
 import { f as __toESM } from "./rolldown-runtime-CINmCwk_.js";
 import { b as DndContext, c as PointerSensor, d as useDndContext, e as useDraggable, f as useSensor, g as useSensors, h as require_client } from "./react-dom-DQVbXeS_.js";
 import { C as useDisclosure, a1 as require_react } from "./chakra-ui-YFQdXzg5.js";
@@ -343,14 +343,15 @@ var ScheduleItem_default = ScheduleItem;
 //#endregion
 //#region src/components/schedule/ScheduleTable.tsx
 const ScheduleTable = (0, import_react.memo)(({ tableId, schedules, onScheduleTimeClick, onDeleteButtonClick }) => {
+	const deferredSchedules = (0, import_react.useDeferredValue)(schedules);
 	const colorsMap = (0, import_react.useMemo)(() => {
-		const lectures = [...new Set(schedules.map(({ lecture }) => lecture.id))];
+		const lectures = [...new Set(deferredSchedules.map(({ lecture }) => lecture.id))];
 		const map = /* @__PURE__ */ new Map();
 		lectures.forEach((lectureId, index) => {
 			map.set(lectureId, SCHEDULE_COLORS[index % SCHEDULE_COLORS.length]);
 		});
 		return map;
-	}, [schedules]);
+	}, [deferredSchedules]);
 	const getColor = (lectureId) => colorsMap.get(lectureId);
 	const dndContext = useDndContext();
 	const activeTableId = (0, import_react.useMemo)(() => {
@@ -361,7 +362,7 @@ const ScheduleTable = (0, import_react.memo)(({ tableId, schedules, onScheduleTi
 		position: "relative",
 		outline: activeTableId === tableId ? "5px dashed" : void 0,
 		outlineColor: "blue.300",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScheduleGrid_default, { onScheduleTimeClick }), schedules.map((schedule, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScheduleItem_default, {
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScheduleGrid_default, { onScheduleTimeClick }), deferredSchedules.map((schedule, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScheduleItem_default, {
 			id: `${tableId}:${index}`,
 			data: schedule,
 			bg: getColor(schedule.lecture.id),
@@ -470,36 +471,43 @@ const __vitePreload = function preload(baseModule, deps, importerUrl) {
 
 //#endregion
 //#region src/components/schedule/SchedulePage.tsx
-const SearchDialog = (0, import_react.lazy)(() => __vitePreload(() => import("./SearchDialog-D4mGVYUG.js"), true               ? __vite__mapDeps([0,1,2,3,4]) : void 0));
+const SearchDialog = (0, import_react.lazy)(() => __vitePreload(() => import("./SearchDialog-DSNhtan6.js"), true               ? __vite__mapDeps([0,1,2,3,4]) : void 0));
 const SchedulePage = () => {
 	const schedulesMap = useScheduleContext();
 	const setSchedulesMap = useScheduleAction();
 	const [searchInfo, setSearchInfo] = (0, import_react.useState)(null);
+	const deferredSchedulesMap = (0, import_react.useDeferredValue)(schedulesMap);
 	const isRemoveDisabled = (0, import_react.useMemo)(() => Object.keys(schedulesMap).length === 1, [schedulesMap]);
 	const handleOpenSearchDialog = useAutoCallback_default((tableId) => setSearchInfo({ tableId }));
 	const handleCloseSearchDialog = useAutoCallback_default(() => setSearchInfo(null));
-	const handleDuplicateBoard = useAutoCallback_default((targetId) => setSchedulesMap((prev) => ({
-		...prev,
-		[`schedule-${Date.now()}`]: [...prev[targetId]]
-	})));
-	const handleRemoveBoard = useAutoCallback_default((targetId) => setSchedulesMap((prev) => {
-		delete prev[targetId];
-		return { ...prev };
+	const handleDuplicateBoard = useAutoCallback_default((targetId) => (0, import_react.startTransition)(() => {
+		setSchedulesMap((prev) => ({
+			...prev,
+			[`schedule-${Date.now()}`]: [...prev[targetId]]
+		}));
+	}));
+	const handleRemoveBoard = useAutoCallback_default((targetId) => (0, import_react.startTransition)(() => {
+		setSchedulesMap((prev) => {
+			delete prev[targetId];
+			return { ...prev };
+		});
 	}));
 	const handleEmptyTimeCellClick = useAutoCallback_default((tableId, timeInfo) => setSearchInfo({
 		tableId,
 		...timeInfo
 	}));
-	const handleScheduleDelete = useAutoCallback_default((tableId, { day, time }) => setSchedulesMap((prev) => ({
-		...prev,
-		[tableId]: prev[tableId].filter((schedule) => schedule.day !== day || !schedule.range.includes(time))
-	})));
+	const handleScheduleDelete = useAutoCallback_default((tableId, { day, time }) => (0, import_react.startTransition)(() => {
+		setSchedulesMap((prev) => ({
+			...prev,
+			[tableId]: prev[tableId].filter((schedule) => schedule.day !== day || !schedule.range.includes(time))
+		}));
+	}));
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Flex, {
 		w: "full",
 		gap: 6,
 		p: 6,
 		flexWrap: "wrap",
-		children: Object.entries(schedulesMap).map(([tableId, schedules], index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScheduleBoard_default, {
+		children: Object.entries(deferredSchedulesMap).map(([tableId, schedules], index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScheduleBoard_default, {
 			index,
 			tableId,
 			schedules,
