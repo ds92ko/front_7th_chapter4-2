@@ -1,7 +1,7 @@
 import { f as __toESM } from "./rolldown-runtime-CINmCwk_.js";
 import { a1 as require_react } from "./chakra-ui-YFQdXzg5.js";
 import { A as ModalBody, B as ModalContent, C as Modal, D as Input, G as FormLabel, I as CheckboxGroup, J as Checkbox, K as FormControl, M as Button, N as Box, P as require_jsx_runtime, b as Wrap, c as Text, e as Tag, f as TagCloseButton, g as TagLabel, h as Tr, i as Thead, j as Th, k as Td, l as Tbody, m as Table, n as VStack, o as HStack, p as Stack, q as Select, x as ModalOverlay, y as ModalHeader, z as ModalCloseButton } from "./react-BDq5ydJY.js";
-import { b as DAY_LABELS, c as useAutoCallback_default, d as useScheduleAction } from "./index-D-MLwsuM.js";
+import { b as parseSchedule, c as DAY_LABELS, d as useAutoCallback_default, e as useScheduleAction } from "./index-BPJtpfzj.js";
 import { b as axios_default } from "./vendor--8zDkgLI.js";
 
 //#region src/constants/search.ts
@@ -107,6 +107,96 @@ const TIME_SLOTS = [
 const PAGE_SIZE = 100;
 
 //#endregion
+//#region src/hooks/useInfiniteScroll.ts
+const useInfiniteScroll = ({ totalItems }) => {
+	const loaderWrapperRef = (0, import_react.useRef)(null);
+	const loaderRef = (0, import_react.useRef)(null);
+	const [page, setPage] = (0, import_react.useState)(1);
+	const lastPage = Math.ceil(totalItems / PAGE_SIZE);
+	const visibleCount = page * PAGE_SIZE;
+	const resetPage = () => {
+		setPage(1);
+		loaderWrapperRef.current?.scrollTo(0, 0);
+	};
+	(0, import_react.useEffect)(() => {
+		const $loader = loaderRef.current;
+		const $loaderWrapper = loaderWrapperRef.current;
+		if (!$loader || !$loaderWrapper) return;
+		const observer = new IntersectionObserver((entries) => {
+			if (entries[0].isIntersecting) setPage((prevPage) => Math.min(lastPage, prevPage + 1));
+		}, {
+			threshold: 0,
+			root: $loaderWrapper
+		});
+		observer.observe($loader);
+		return () => observer.unobserve($loader);
+	}, [lastPage]);
+	return {
+		loaderWrapperRef,
+		loaderRef,
+		page,
+		visibleCount,
+		resetPage
+	};
+};
+
+//#endregion
+//#region src/hooks/useSearchOptions.ts
+const useSearchOptions = ({ initialDay, initialTime, onOptionChange } = {}) => {
+	const [searchOptions, setSearchOptions] = (0, import_react.useState)({
+		query: "",
+		grades: [],
+		days: [],
+		times: [],
+		majors: []
+	});
+	(0, import_react.useEffect)(() => {
+		setSearchOptions((prev) => ({
+			...prev,
+			days: initialDay ? [initialDay] : [],
+			times: initialTime ? [initialTime] : []
+		}));
+		onOptionChange?.();
+	}, [
+		initialDay,
+		initialTime,
+		onOptionChange
+	]);
+	const changeSearchOption = useAutoCallback_default((field, value) => {
+		setSearchOptions((prev) => ({
+			...prev,
+			[field]: value
+		}));
+		onOptionChange?.();
+	});
+	const handleChangeQuery = useAutoCallback_default((value) => changeSearchOption("query", value));
+	const handleChangeCredits = useAutoCallback_default((value) => changeSearchOption("credits", value));
+	const handleChangeGrades = useAutoCallback_default((value) => changeSearchOption("grades", value));
+	const handleChangeDays = useAutoCallback_default((value) => changeSearchOption("days", value));
+	const handleChangeTimes = useAutoCallback_default((value) => changeSearchOption("times", value));
+	const handleChangeMajors = useAutoCallback_default((value) => changeSearchOption("majors", value));
+	const handleChange = {
+		query: handleChangeQuery,
+		credits: handleChangeCredits,
+		grades: handleChangeGrades,
+		days: handleChangeDays,
+		times: handleChangeTimes,
+		majors: handleChangeMajors
+	};
+	return {
+		searchOptions,
+		handleChange,
+		reset: () => setSearchOptions({
+			query: "",
+			grades: [],
+			days: [],
+			times: [],
+			majors: []
+		})
+	};
+};
+
+//#endregion
 //#region src/lib/cachedFetch.ts
 const cache = /* @__PURE__ */ new Map();
 function cachedFetch(url) {
@@ -122,24 +212,33 @@ function cachedFetch(url) {
 }
 
 //#endregion
-//#region src/utils/schedule.ts
-const getTimeRange = (value) => {
-	const [start, end] = value.split("~").map(Number);
-	if (end === void 0) return [start];
-	return Array(end - start + 1).fill(start).map((v, k) => v + k);
+//#region src/services/lectureService.ts
+const fetchMajors = () => cachedFetch("./schedules-majors.json");
+const fetchLiberalArts = () => cachedFetch("./schedules-liberal-arts.json");
+const fetchAllLectures = async () => {
+	const results = await Promise.all([
+		fetchMajors(),
+		fetchLiberalArts(),
+		fetchMajors(),
+		fetchLiberalArts(),
+		fetchMajors(),
+		fetchLiberalArts()
+	]);
+	return results.flatMap((result) => result.data);
 };
-const parseSchedule = (schedule) => {
-	const schedules = schedule.split("<p>");
-	return schedules.map((schedule$1) => {
-		const reg = /^([가-힣])(\d+(~\d+)?)(.*)/;
-		const [day] = schedule$1.split(/(\d+)/);
-		const range = getTimeRange(schedule$1.replace(reg, "$2"));
-		const room = schedule$1.replace(reg, "$4")?.replace(/\(|\)/g, "");
-		return {
-			day,
-			range,
-			room
-		};
+
+//#endregion
+//#region src/utils/search.ts
+const filterLectures = (lectures, searchOptions) => {
+	const { query = "", credits, grades, days, times, majors } = searchOptions;
+	return lectures.filter((lecture) => lecture.title.toLowerCase().includes(query.toLowerCase()) || lecture.id.toLowerCase().includes(query.toLowerCase())).filter((lecture) => grades.length === 0 || grades.includes(lecture.grade)).filter((lecture) => majors.length === 0 || majors.includes(lecture.major)).filter((lecture) => !credits || lecture.credits.startsWith(String(credits))).filter((lecture) => {
+		if (days.length === 0) return true;
+		const schedules = lecture.schedule ? parseSchedule(lecture.schedule) : [];
+		return schedules.some((s) => days.includes(s.day));
+	}).filter((lecture) => {
+		if (times.length === 0) return true;
+		const schedules = lecture.schedule ? parseSchedule(lecture.schedule) : [];
+		return schedules.some((s) => s.range.some((time) => times.includes(time)));
 	});
 };
 
@@ -369,52 +468,17 @@ var SearchTableHeader_default = SearchTableHeader;
 
 //#endregion
 //#region src/components/search/SearchDialog.tsx
-const fetchMajors = () => cachedFetch("./schedules-majors.json");
-const fetchLiberalArts = () => cachedFetch("./schedules-liberal-arts.json");
-const fetchAllLectures = () => Promise.all([
-	fetchMajors(),
-	fetchLiberalArts(),
-	fetchMajors(),
-	fetchLiberalArts(),
-	fetchMajors(),
-	fetchLiberalArts()
-]);
 const SearchDialog = (0, import_react.memo)(({ searchInfo, onClose }) => {
 	const setSchedulesMap = useScheduleAction();
-	const loaderWrapperRef = (0, import_react.useRef)(null);
-	const loaderRef = (0, import_react.useRef)(null);
 	const [lectures, setLectures] = (0, import_react.useState)([]);
-	const [page, setPage] = (0, import_react.useState)(1);
-	const [searchOptions, setSearchOptions] = (0, import_react.useState)({
-		query: "",
-		grades: [],
-		days: [],
-		times: [],
-		majors: []
+	const { searchOptions, handleChange } = useSearchOptions({
+		initialDay: searchInfo?.day,
+		initialTime: searchInfo?.time
 	});
-	const filteredLectures = (0, import_react.useMemo)(() => {
-		const { query = "", credits, grades, days, times, majors } = searchOptions;
-		return lectures.filter((lecture) => lecture.title.toLowerCase().includes(query.toLowerCase()) || lecture.id.toLowerCase().includes(query.toLowerCase())).filter((lecture) => grades.length === 0 || grades.includes(lecture.grade)).filter((lecture) => majors.length === 0 || majors.includes(lecture.major)).filter((lecture) => !credits || lecture.credits.startsWith(String(credits))).filter((lecture) => {
-			if (days.length === 0) return true;
-			const schedules = lecture.schedule ? parseSchedule(lecture.schedule) : [];
-			return schedules.some((s) => days.includes(s.day));
-		}).filter((lecture) => {
-			if (times.length === 0) return true;
-			const schedules = lecture.schedule ? parseSchedule(lecture.schedule) : [];
-			return schedules.some((s) => s.range.some((time) => times.includes(time)));
-		});
-	}, [lectures, searchOptions]);
-	const lastPage = Math.ceil(filteredLectures.length / PAGE_SIZE);
-	const visibleLectures = (0, import_react.useMemo)(() => filteredLectures.slice(0, page * PAGE_SIZE), [filteredLectures, page]);
+	const filteredLectures = (0, import_react.useMemo)(() => filterLectures(lectures, searchOptions), [lectures, searchOptions]);
+	const { loaderWrapperRef, loaderRef, visibleCount, resetPage } = useInfiniteScroll({ totalItems: filteredLectures.length });
+	const visibleLectures = (0, import_react.useMemo)(() => filteredLectures.slice(0, visibleCount), [filteredLectures, visibleCount]);
 	const allMajors = (0, import_react.useMemo)(() => [...new Set(lectures.map((lecture) => lecture.major))], [lectures]);
-	const changeSearchOption = useAutoCallback_default((field, value) => {
-		setPage(1);
-		setSearchOptions((prev) => ({
-			...prev,
-			[field]: value
-		}));
-		loaderWrapperRef.current?.scrollTo(0, 0);
-	});
 	const addSchedule = useAutoCallback_default((lecture) => {
 		if (!searchInfo) return;
 		const { tableId } = searchInfo;
@@ -428,52 +492,21 @@ const SearchDialog = (0, import_react.memo)(({ searchInfo, onClose }) => {
 		}));
 		onClose();
 	});
+	const handleOptionChange = useAutoCallback_default(resetPage);
+	(0, import_react.useEffect)(() => {
+		handleOptionChange();
+	}, [searchOptions, handleOptionChange]);
 	(0, import_react.useEffect)(() => {
 		if (!searchInfo) return;
 		const start = performance.now();
 		console.log("API 호출 시작: ", start);
-		fetchAllLectures().then((results) => {
+		fetchAllLectures().then((lectures$1) => {
 			const end = performance.now();
 			console.log("모든 API 호출 완료 ", end);
 			console.log("API 호출에 걸린 시간(ms): ", end - start);
-			setLectures(results.flatMap((result) => result.data));
+			setLectures(lectures$1);
 		});
 	}, [searchInfo]);
-	(0, import_react.useEffect)(() => {
-		const $loader = loaderRef.current;
-		const $loaderWrapper = loaderWrapperRef.current;
-		if (!$loader || !$loaderWrapper) return;
-		const observer = new IntersectionObserver((entries) => {
-			if (entries[0].isIntersecting) setPage((prevPage) => Math.min(lastPage, prevPage + 1));
-		}, {
-			threshold: 0,
-			root: $loaderWrapper
-		});
-		observer.observe($loader);
-		return () => observer.unobserve($loader);
-	}, [lastPage]);
-	(0, import_react.useEffect)(() => {
-		setSearchOptions((prev) => ({
-			...prev,
-			days: searchInfo?.day ? [searchInfo.day] : [],
-			times: searchInfo?.time ? [searchInfo.time] : []
-		}));
-		setPage(1);
-	}, [searchInfo]);
-	const handleChangeQuery = useAutoCallback_default((value) => changeSearchOption("query", value));
-	const handleChangeCredits = useAutoCallback_default((value) => changeSearchOption("credits", value));
-	const handleChangeGrades = useAutoCallback_default((value) => changeSearchOption("grades", value));
-	const handleChangeDays = useAutoCallback_default((value) => changeSearchOption("days", value));
-	const handleChangeTimes = useAutoCallback_default((value) => changeSearchOption("times", value));
-	const handleChangeMajors = useAutoCallback_default((value) => changeSearchOption("majors", value));
-	const handleChange = {
-		query: handleChangeQuery,
-		credits: handleChangeCredits,
-		grades: handleChangeGrades,
-		days: handleChangeDays,
-		times: handleChangeTimes,
-		majors: handleChangeMajors
-	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Modal, {
 		isOpen: Boolean(searchInfo),
 		onClose,

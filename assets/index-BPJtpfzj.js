@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/SearchDialog-DSNhtan6.js","assets/react-BDq5ydJY.js","assets/chakra-ui-YFQdXzg5.js","assets/rolldown-runtime-CINmCwk_.js","assets/vendor--8zDkgLI.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/SearchDialog-BWb8PK5y.js","assets/react-BDq5ydJY.js","assets/chakra-ui-YFQdXzg5.js","assets/rolldown-runtime-CINmCwk_.js","assets/vendor--8zDkgLI.js"])))=>i.map(i=>d[i]);
 import { f as __toESM } from "./rolldown-runtime-CINmCwk_.js";
 import { b as DndContext, c as PointerSensor, d as useDndContext, e as useDraggable, f as useSensor, g as useSensors, h as require_client } from "./react-dom-DQVbXeS_.js";
 import { C as useDisclosure, a1 as require_react } from "./chakra-ui-YFQdXzg5.js";
@@ -61,6 +61,41 @@ const useAutoCallback = (callback) => {
 	return (0, import_react.useCallback)((...args) => callbackRef.current?.(...args), []);
 };
 var useAutoCallback_default = useAutoCallback;
+
+//#endregion
+//#region src/hooks/useScheduleBoard.ts
+const useScheduleBoard = () => {
+	const setSchedulesMap = useScheduleAction();
+	const duplicateBoard = (targetId) => {
+		(0, import_react.startTransition)(() => {
+			setSchedulesMap((prev) => ({
+				...prev,
+				[`schedule-${Date.now()}`]: [...prev[targetId]]
+			}));
+		});
+	};
+	const removeBoard = (targetId) => {
+		(0, import_react.startTransition)(() => {
+			setSchedulesMap((prev) => {
+				delete prev[targetId];
+				return { ...prev };
+			});
+		});
+	};
+	const deleteSchedule = (tableId, { day, time }) => {
+		(0, import_react.startTransition)(() => {
+			setSchedulesMap((prev) => ({
+				...prev,
+				[tableId]: prev[tableId].filter((schedule) => schedule.day !== day || !schedule.range.includes(time))
+			}));
+		});
+	};
+	return {
+		duplicateBoard,
+		removeBoard,
+		deleteSchedule
+	};
+};
 
 //#endregion
 //#region src/constants/common.ts
@@ -183,6 +218,36 @@ const ScheduleControls = (0, import_react.memo)(({ tableId, onOpenSearchDialog, 
 	});
 });
 var ScheduleControls_default = ScheduleControls;
+
+//#endregion
+//#region src/utils/schedule.ts
+const getTimeRange = (value) => {
+	const [start, end] = value.split("~").map(Number);
+	if (end === void 0) return [start];
+	return Array(end - start + 1).fill(start).map((v, k) => v + k);
+};
+const parseSchedule = (schedule) => {
+	const schedules = schedule.split("<p>");
+	return schedules.map((schedule$1) => {
+		const reg = /^([가-힣])(\d+(~\d+)?)(.*)/;
+		const [day] = schedule$1.split(/(\d+)/);
+		const range = getTimeRange(schedule$1.replace(reg, "$2"));
+		const room = schedule$1.replace(reg, "$4")?.replace(/\(|\)/g, "");
+		return {
+			day,
+			range,
+			room
+		};
+	});
+};
+const createScheduleColorMap = (schedules) => {
+	const lectures = [...new Set(schedules.map(({ lecture }) => lecture.id))];
+	const map = /* @__PURE__ */ new Map();
+	lectures.forEach((lectureId, index) => {
+		map.set(lectureId, SCHEDULE_COLORS[index % SCHEDULE_COLORS.length]);
+	});
+	return map;
+};
 
 //#endregion
 //#region src/components/schedule/ScheduleGrid.tsx
@@ -344,14 +409,7 @@ var ScheduleItem_default = ScheduleItem;
 //#region src/components/schedule/ScheduleTable.tsx
 const ScheduleTable = (0, import_react.memo)(({ tableId, schedules, onScheduleTimeClick, onDeleteButtonClick }) => {
 	const deferredSchedules = (0, import_react.useDeferredValue)(schedules);
-	const colorsMap = (0, import_react.useMemo)(() => {
-		const lectures = [...new Set(deferredSchedules.map(({ lecture }) => lecture.id))];
-		const map = /* @__PURE__ */ new Map();
-		lectures.forEach((lectureId, index) => {
-			map.set(lectureId, SCHEDULE_COLORS[index % SCHEDULE_COLORS.length]);
-		});
-		return map;
-	}, [deferredSchedules]);
+	const colorsMap = (0, import_react.useMemo)(() => createScheduleColorMap(deferredSchedules), [deferredSchedules]);
 	const getColor = (lectureId) => colorsMap.get(lectureId);
 	const dndContext = useDndContext();
 	const activeTableId = (0, import_react.useMemo)(() => {
@@ -471,37 +529,22 @@ const __vitePreload = function preload(baseModule, deps, importerUrl) {
 
 //#endregion
 //#region src/components/schedule/SchedulePage.tsx
-const SearchDialog = (0, import_react.lazy)(() => __vitePreload(() => import("./SearchDialog-DSNhtan6.js"), true               ? __vite__mapDeps([0,1,2,3,4]) : void 0));
+const SearchDialog = (0, import_react.lazy)(() => __vitePreload(() => import("./SearchDialog-BWb8PK5y.js"), true               ? __vite__mapDeps([0,1,2,3,4]) : void 0));
 const SchedulePage = () => {
 	const schedulesMap = useScheduleContext();
-	const setSchedulesMap = useScheduleAction();
+	const { duplicateBoard, removeBoard, deleteSchedule } = useScheduleBoard();
 	const [searchInfo, setSearchInfo] = (0, import_react.useState)(null);
 	const deferredSchedulesMap = (0, import_react.useDeferredValue)(schedulesMap);
 	const isRemoveDisabled = (0, import_react.useMemo)(() => Object.keys(schedulesMap).length === 1, [schedulesMap]);
 	const handleOpenSearchDialog = useAutoCallback_default((tableId) => setSearchInfo({ tableId }));
 	const handleCloseSearchDialog = useAutoCallback_default(() => setSearchInfo(null));
-	const handleDuplicateBoard = useAutoCallback_default((targetId) => (0, import_react.startTransition)(() => {
-		setSchedulesMap((prev) => ({
-			...prev,
-			[`schedule-${Date.now()}`]: [...prev[targetId]]
-		}));
-	}));
-	const handleRemoveBoard = useAutoCallback_default((targetId) => (0, import_react.startTransition)(() => {
-		setSchedulesMap((prev) => {
-			delete prev[targetId];
-			return { ...prev };
-		});
-	}));
 	const handleEmptyTimeCellClick = useAutoCallback_default((tableId, timeInfo) => setSearchInfo({
 		tableId,
 		...timeInfo
 	}));
-	const handleScheduleDelete = useAutoCallback_default((tableId, { day, time }) => (0, import_react.startTransition)(() => {
-		setSchedulesMap((prev) => ({
-			...prev,
-			[tableId]: prev[tableId].filter((schedule) => schedule.day !== day || !schedule.range.includes(time))
-		}));
-	}));
+	const handleDuplicateBoard = useAutoCallback_default(duplicateBoard);
+	const handleRemoveBoard = useAutoCallback_default(removeBoard);
+	const handleScheduleDelete = useAutoCallback_default(deleteSchedule);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Flex, {
 		w: "full",
 		gap: 6,
@@ -1287,4 +1330,4 @@ var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
 //#endregion
-export { DAY_LABELS as b, useAutoCallback_default as c, useScheduleAction as d };
+export { parseSchedule as b, DAY_LABELS as c, useAutoCallback_default as d, useScheduleAction as e };
